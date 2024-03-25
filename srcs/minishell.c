@@ -6,7 +6,7 @@
 /*   By: nthoach <nthoach@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/17 20:48:01 by nthoach           #+#    #+#             */
-/*   Updated: 2024/03/19 23:29:39 by nthoach          ###   ########.fr       */
+/*   Updated: 2024/03/25 21:42:00 by nthoach          ###   ########.fr       */
 /*                                                                            */
 /******************************************************************************/
 
@@ -15,7 +15,7 @@
 /*
 Event function in case of readline hook - in this program, it do nothing 
 */
-void	event(void)
+int	event(void)
 {
 	return (0);
 }
@@ -28,19 +28,19 @@ Action when CTRL + C is pressed, three cases:
 
 void	sigint_handle(int sig)
 {
-	if (g_status != HEREDOC_IN)
+	if (g_state != HEREDOC_IN)
 		ft_putstr_fd("\n", 2);
-	if (g_status == CMD_IN)
+	if (g_state == CMD_IN)
 	{
-		g_status = CTRL_C;
+		g_state = CTRL_C;
 		rl_replace_line("", 0);
 		rl_redisplay();
 		rl_done = 1;
 		return ;
 	}
-	else if (g_status == HEREDOC_IN)
+	else if (g_state == HEREDOC_IN)
 	{
-		g_status = HEREDOC_STOP;
+		g_state = HEREDOC_STOP;
 		rl_replace_line("", 0);
 		rl_redisplay();
 		rl_done = 1;
@@ -56,15 +56,15 @@ CTRL + \ handling
 */
 void	sigquit_handle(int sig)
 {
-	if (g_status == CMD_IN)
+	if (g_state == CMD_IN)
 	{
-		g_status = CTRL_BS;
+		g_state = CTRL_BS;
 		rl_replace_line("", 0);
 		rl_redisplay();
 		rl_done = 1;
 		ft_putstr_fd("Quit: ", 2);
 		ft_putnbr_fd(sig, 2);
-		ft_puthcar_fd('\n', 2);
+		ft_putchar_fd('\n', 2);
 		return ;
 	}
 }
@@ -84,29 +84,29 @@ void	free_double_ptr(void **ptr)
 }
 
 // duplicates the passed string
-char	**ft_dup_arr(char **arr)
+char	**ft_dup_arr(char **envp)
 {
-	char	**arr_dup;
+	char	**envp_copy;
 	size_t	i;
 
 	i = 0;
-	while (arr[i] != NULL)
+	while (envp[i] != NULL)
 		i++;
-	arr_dup = ft_calloc(i + 1, sizeof(char *));
-	if (!arr_dup)
+	envp_copy = ft_calloc(i + 1, sizeof(char *));
+	if (!envp_copy)
 		return (NULL);
 	i = 0;
-	while (arr_dup[i] != NULL)
+	while(envp[i] != NULL)
 	{
-		arr_dup[i] = ft_strdup(arr[i]);
-		if (arr_dup[i] == NULL)
+		envp_copy[i] = ft_strdup(envp[i]);
+		if (envp_copy[i] == NULL)
 		{
-			free_double_ptr((void **) arr_dup);
-			return (arr_dup;
+			free_double_ptr((void **) envp_copy);
+			return (envp_copy);
 		}
 		i++;
 	}
-	return (arr_dup);
+	return (envp_copy);
 }
 
 /*
@@ -151,6 +151,32 @@ char	**whileloop_add_var(char **env, char **rtn, char *str)
 	if (env[0] == NULL)
 		rtn[0] = ft_strdup(str);
 	return (rtn);
+}
+
+int	ft_error(int error)
+{
+	ft_putstr_fd("minishell: ", STDERR_FILENO);
+	if (error == 0)
+		ft_putstr_fd("syntax error near unexpected token 'newline'\n",
+			STDERR_FILENO);
+	else if (error == 1)
+		ft_putstr_fd("memory error: unable to assign memory\n", STDERR_FILENO);
+	else if (error == 2)
+		ft_putstr_fd("syntax error: unable to locate closing quotation\n",
+			STDERR_FILENO);
+	else if (error == 4)
+		ft_putstr_fd("Failed to create pipe\n", STDERR_FILENO);
+	else if (error == 5)
+		ft_putstr_fd("Failed to fork\n", STDERR_FILENO);
+	else if (error == 6)
+		ft_putstr_fd("outfile: Error\n", STDERR_FILENO);
+	else if (error == 7)
+		ft_putstr_fd("infile: No such file or directory\n", STDERR_FILENO);
+	else if (error == 8)
+		ft_putendl_fd("Path does not exist", STDERR_FILENO);
+	else if (error == 9)
+		ft_putendl_fd("Path does not exist", STDERR_FILENO);
+	return (EXIT_FAILURE);
 }
 
 /*
@@ -209,15 +235,15 @@ int	get_pwd(t_mnsh *mnsh)
 	i = 0;
 	mnsh->pwd = 0;
 	mnsh->old_pwd = 0;
+	//ft_printf("0k-2.1");
 	while (mnsh->envp && mnsh->envp[i])
 	{
 		if (!ft_strncmp(mnsh->envp[i], "PWD=", 4))
-			mnsh = ft_substr(mnsh->envp[i],
-					4, ft_strlen(mnsh->envp[i]) - 4);
+			mnsh->pwd = ft_substr(mnsh->envp[i], 4, ft_strlen(mnsh->envp[i]) - 4);
 		else if (!ft_strncmp(mnsh->envp[i], "OLDPWD=", 7))
-			mnsh->old_pwd = ft_substr(mnsh->envp[i],
-					7, ft_strlen(mnsh->envp[i]) - 7);
+			mnsh->old_pwd = ft_substr(mnsh->envp[i], 7, ft_strlen(mnsh->envp[i]) - 7);
 		i++;
+		//ft_printf("0k-2.1");//
 	}
 	validate_pwd(mnsh);
 	return (1);
@@ -225,31 +251,63 @@ int	get_pwd(t_mnsh *mnsh)
 
 void	ini_mnsh(t_mnsh *mnsh, char **envp)
 {
-	ft_memset(mnsh, 0, sizeof(t_mnsh));
+	mnsh->cmd = 0;
+	mnsh->path = 0;
+	mnsh->pwd = 0;
+	mnsh->old_pwd = 0;
+	mnsh->pipe = 0;
+	mnsh->pid = 0;
+	mnsh->envp = 0;
+	mnsh->reset = false;
+	//ft_printf("0k-2.1");
+	//ft_memset(mnsh, 0, sizeof(t_mnsh));
 	if (*envp != 0)
 		mnsh->envp = ft_dup_arr(envp);
+	//ft_printf("0k-2.1");
 	get_pwd(mnsh);
+}
+// frees memory associated with a cmd
+void	free_cmd(t_cmd *cmd)
+{
+	t_redir	*ptr;
+	t_redir	*del;
+
+	if (cmd->h_filename)
+		free(cmd->h_filename);
+	if (cmd->arg)
+		free_double_ptr((void **) cmd->arg);
+	ptr = cmd->redirect;
+	while (ptr)
+	{
+		del = ptr;
+		ptr = ptr->next;
+		if (del->path)
+			free(del->path);
+		free(del);
+	}
+	if (cmd)
+		free(cmd);
 }
 
 // resets utils variables
 int	reset_mnsh(t_mnsh *mnsh)
 {
-	t_cmds	*ptr;
-	t_cmds	*del;
+	t_cmd	*ptr;
+	t_cmd	*del;
 
-	ptr = utils->cmds;
+	ptr = mnsh->cmd;
 	while (ptr)
 	{
 		del = ptr;
 		ptr = ptr->next;
 		free_cmd(del);
 	}
-	if (utils->input)
-		free(utils->input);
-	if (utils->pid)
-		free(utils->pid);
-	utils->reset = true;
-	free_double_ptr((void **)utils->paths);
+	if (mnsh->input)
+		free(mnsh->input);
+	if (mnsh->pid)
+		free(mnsh->pid);
+	mnsh->reset = true;
+	free_double_ptr((void **) mnsh->path);
 	return (1);
 }
 
@@ -267,13 +325,13 @@ void	loop_mnsh(t_mnsh *mnsh)
 {
 	while (1)
 	{
-		mnsh->input = readline("\033[1;31mminishell\033[34m$ \032[0m");
+		mnsh->input = readline("minishell>");
 		//implement_mnsh(mnsh);
 		if (!mnsh->input)
 		{
 			reset_mnsh(mnsh);
 			free_mnsh(mnsh);
-			printf("exit\n");
+			ft_printf("exit\n");
 			exit(0);
 		}
 		else if (mnsh->input[0] == '\0')
@@ -294,7 +352,7 @@ void	loop_mnsh(t_mnsh *mnsh)
 3) running loops of minishell
 4) free the memory
 */
-int	main(int ac, char *av[], char *envp[])
+int	main(int ac, char **av, char **envp)
 {
 	t_mnsh	mnsh;
 
@@ -304,7 +362,13 @@ int	main(int ac, char *av[], char *envp[])
 		exit(0);
 	}
 	ini_sigs();
+	// while (*envp)
+	// {
+	// 	ft_printf("%s\n", *envp);
+	// 	envp++;
+	// }	
 	ini_mnsh(&mnsh, envp);
+	//ft_printf("0k-2");
 	ft_printf("\n\n%s\n\n", "Starting Minishell...");
 	loop_mnsh(&mnsh);
 	free_mnsh(&mnsh);

@@ -1,0 +1,85 @@
+#******************************************************************************#
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    Makefile                                           :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: nthoach <nthoach@student.42.fr>            +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2024/02/10 12:42:36 by honguyen          #+#    #+#              #
+#    Updated: 2024/03/21 22:11:48 by nthoach          ###   ########.fr        #
+#                                                                              #
+#******************************************************************************#
+
+NAME = minishell
+NAME_BONUS = minishell_bonus
+
+CC = cc
+FLAGS = -Wall -Wextra -Werror -g3
+
+DIR_LIBFT = libft/
+DIR_BUILD = build/
+DIR_OBJ = build/obj/
+DIR_SRC = srcs/
+DIR_BUI = srcs/builtin
+DIR_ERR = srcs/error
+DIR_EXE = srcs/exec
+DIR_LEX = srcs/lexer
+DIR_PAR = srcs/parser
+DIR_PIP = srcs/pipe
+DIR_UTI = srcs/util
+
+FILE_C = minishell.c 
+
+LIBFT = $(addprefix $(DIR_LIBFT), libft.a)
+
+DIR_RL = "/opt/homebrew/Cellar/readline/8.2.10"
+LIB_RL = -lreadline -lhistory -L $(DIR_RL)/lib -lreadline -L$(DIR_LIBFT) -lft
+
+INCLUDES = -I./headers -I$(DIR_LIBFT) -I$(DIR_RL)/include
+
+HEADERS = headers/minishell.h
+
+
+FILES_C = minishell.c
+SRCS = $(addprefix $(DIR_SRC), $(CFILES))
+
+OBJ	=	$(addprefix $(DIR_OBJ), $(notdir $(patsubst %.c, %.o, $(SRCS))))
+
+all: $(DIR_BUILD) $(DIR_OBJ) $(NAME)
+
+$(NAME): $(LIBFT) $(OBJ) $(DIR_OBJ) $(DIR_BUILD)
+	@$(CC) $(FLAGS) $(LIBFT) $(OBJ) $(LIB_RL) -o $(NAME)
+
+
+
+
+bonus: $(OBJ_BONUS)
+	make -C $(LIBFT_DIR)
+	$(CC) $(FLAGS) $(INCLUDE) $(OBJ_BONUS) $(LIBFT) -o $(NAME_BONUS)
+
+play: all
+	./$(NAME) map.ber
+
+playbonus: bonus
+	./$(NAME_BONUS) map.ber
+
+test:
+	@make $(NAME)
+	@./$(NAME) map.ber
+
+leaks:
+	@make $(NAME)
+	@valgrind -s --leak-check=full --show-leak-kinds=all ./$(NAME) map.ber
+
+	
+clean:
+	rm -rf $(OBJ) $(OBJ_BONUS)
+	make clean -C $(LIBFT_DIR)
+
+fclean: clean
+	rm -f $(NAME) $(NAME_BONUS)
+	make fclean -C $(LIBFT_DIR)
+
+re: fclean all bonus
+
+.PHONY: all clean fclean re bonus play

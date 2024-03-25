@@ -1,94 +1,102 @@
-#******************************************************************************#
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Makefile                                           :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: nthoach <nthoach@student.42.fr>            +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2024/02/10 12:42:36 by honguyen          #+#    #+#              #
-#    Updated: 2024/03/19 22:10:33 by nthoach          ###   ########.fr        #
-#                                                                              #
-#******************************************************************************#
+END=$'\x1b[0m
+BOLD=$'\x1b[1m
+UNDER=$'\x1b[4m
+REV=$'\x1b[7m
+GREY=$'\x1b[30m
+RED=$'\x1b[31m
+GREEN=$'\x1b[32m
+YELLOW=$'\x1b[33m
+BLUE=$'\x1b[34m
+PURPLE=$'\x1b[35m
+CYAN=$'\x1b[36m
+WHITE=$'\x1b[37m
 
 NAME = minishell
-NAME_BONUS = minishell_bonus
-
+FLAGS = -Wall -Werror -Wextra -g3
 CC = cc
-FLAGS = -Wall -Wextra -Werror -g3
 
-DIR_LIBFT = libft/
-DIR_OBJ = obj/
-DIR_SRC = srcs/
-DIR_BUI = srcs/builtins
-DIR_ERR = srcs/errors
-DIR_EXE = srcs/execs
-DIR_LEX = srcs/lexer
-DIR_PAR = srcs/parser
-DIR_PIP = srcs/pipes
-DIR_UTI = srcs/utils
+LIBFTP = libft/
+PATHB = build/
+PATHO = build/obj/
+PATHS = srcs/
+PATHSL = srcs/lexer/
+PATHSP = srcs/parser/
+PATHSB = srcs/builtin/
+PATHSU = srcs/util/
+PATHSE = srcs/error/
+PATHP = srcs/pipe/
+PATHEX = srcs/exec/
 
-SRCS = 
+BUILD_PATHS = $(PATHB) $(PATHO)
 
-LIBFT = $(addprefix $(LIBFT_DIR), libft.a)
+SOURCE	=	srcs/minishell.c
+OBJS	=	$(addprefix $(PATHO), $(notdir $(patsubst %.c, %.o, $(SOURCE))))
 
-RL_DIR = "/opt/homebrew/Cellar/readline/8.2.10"
-RL_LIB = READLINE_LIB = -lreadline -lhistory -L $(RL_DIR)/lib -lreadline -L$(LIBFTP) -lft
+LIBFT	=	./libft/libft.a
 
+HEADER	=	./headers/minishell.h
 
+READLINE_DIR = "/opt/homebrew/Cellar/readline/8.2.10"
 
-INCLUDES = -I./includes -I$(PATHP) -I$(LIBFT_DIR) -I$(RL_DIR)/include
+READLINE_LIB = -lreadline -lhistory -L $(READLINE_DIR)/lib -lreadline -L$(LIBFTP) -lft
 
-HEADERS = minishell.h
+INCLUDES = -I./includes -I$(PATHP) -I$(LIBFTP) -I$(READLINE_DIR)/include
 
-INCLUDE = #-L$(MLX_DIR) -lmlx -lm #-framework OpenGL -framework AppKit 
+all: $(BUILD_PATHS) $(NAME)
+	@echo "\n${WHITE}${BOLD}${REV}>>>>>>>>>>>>>>>>>>>>>>>>>>>>       ✅ ✅ ✅ ✅ ✅  MANDATORY COMPILATION SUCCESSFULL   🙌 🙌 🙌         <<<<<<<<<<<<<<<<<<<<<<<<<<<<${END}"
+	@echo "\n${WHITE}${BOLD}${REV}>>>>>>>>>>>>>>>>>>>>>>>>>>>>                   BY    SIMON & MARIAM   😎😎😎😎😎😎😎😎                 <<<<<<<<<<<<<<<<<<<<<<<<<<<<${END}"
 
+$(NAME): $(LIBFT) $(OBJS) $(BUILD_PATHS)
+	@$(CC) $(FLAGS) $(LIBFT) $(OBJS) $(READLINE_LIB) -o $(NAME)
 
-CFILES = main.c signal .c
-SRCS = $(addprefix $DIR_SRC, $(CFILES))
-SRCS_BONUS = $(addprefix srcs_bonus/, $(CFILES))
+$(PATHO)%.o:: $(PATHSP)%.c $(HEADERS)
+	@echo "${GREEN}${BOLD}${UNDER}Compiling ${notdir $<}			in	$(PATHSP)${END}"
+	@$(CC) -c $(FLAGS) $(INCLUDES) $< -o $@
 
-SRC = $(SRCS) so_long.c
-SRC_BONUS = $(SRCS_BONUS) so_long.c
+$(PATHO)%.o:: $(PATHS)%.c $(HEADERS)
+	@echo "${CYAN}${BOLD}${UNDER}Compiling ${notdir $<}			in	$(PATHS)${END}"
+	@$(CC) -c $(FLAGS) $(INCLUDES) $< -o $@
 
-OBJ = $(SRC:.c=.o)
-OBJ_BONUS = $(SRC_BONUS:.c=.o)
+$(PATHO)%.o:: $(PATHSL)%.c $(HEADERS)
+	@echo "${PURPLE}${BOLD}${UNDER}Compiling ${notdir $<}			in	$(PATHSL)${END}"
+	@$(CC) -c $(FLAGS) $(INCLUDES) $< -o $@
 
-%.o: %.c $(HEADERS)
-	$(CC) $(FLAGS) -I$(MLX_DIR) -c $< -o $@
+$(PATHO)%.o:: $(PATHSB)%.c $(HEADERS)
+	@echo "${YELLOW}${BOLD}${UNDER}Compiling ${notdir $<}			in	$(PATHSB)${END}"
+	@$(CC) -c $(FLAGS) $(INCLUDES) $< -o $@
 
-$(NAME): $(OBJ)
-	make -C $(LIBFT_DIR)
-	$(CC) $(FLAGS) $(INCLUDE) $(OBJ) $(LIBFT) -o $(NAME)
+$(PATHO)%.o:: $(PATHSU)%.c $(HEADERS)
+	@echo "${BLUE}${BOLD}${BLINK}Compiling ${notdir $<}			in	$(PATHSU)${END}"
+	@$(CC) -c $(FLAGS) $(INCLUDES) $< -o $@
 
-all: $(NAME)
+$(PATHO)%.o:: $(PATHSE)%.c $(HEADERS)
+	@echo "${WHITE}${BOLD}${BLINK}Compiling ${notdir $<}			in	$(PATHSE)${END}"
+	@$(CC) -c $(FLAGS) $(INCLUDES) $< -o $@
 
-bonus: $(OBJ_BONUS)
-	make -C $(LIBFT_DIR)
-	$(CC) $(FLAGS) $(INCLUDE) $(OBJ_BONUS) $(LIBFT) -o $(NAME_BONUS)
+$(PATHO)%.o:: $(PATHEX)%.c $(HEADERS)
+	@echo "${GREY}${BOLD}${UNDER}Compiling ${notdir $<}			in	$(PATHEX)${END}"
+	@$(CC) -c $(FLAGS) $(INCLUDES) $< -o $@
 
-play: all
-	./$(NAME) map.ber
+$(LIBFT):
+	@$(MAKE) -C $(LIBFTP)
 
-playbonus: bonus
-	./$(NAME_BONUS) map.ber
+$(PATHB):
+	@mkdir $(PATHB)
 
-test:
-	@make $(NAME)
-	@./$(NAME) map.ber
+$(PATHO):
+	@mkdir $(PATHO)
 
-leaks:
-	@make $(NAME)
-	@valgrind -s --leak-check=full --show-leak-kinds=all ./$(NAME) map.ber
-
-	
 clean:
-	rm -rf $(OBJ) $(OBJ_BONUS)
-	make clean -C $(LIBFT_DIR)
+	@echo "Cleaning"
+	@rm -f $(OBJS)
+	@rm -f .tmp*
+	@rm -rf $(PATHO) $(PATHB)
+	@make fclean -C $(LIBFTP)
 
 fclean: clean
-	rm -f $(NAME) $(NAME_BONUS)
-	make fclean -C $(LIBFT_DIR)
+	@rm -f $(NAME)
+	@rm -f $(LIBFT)
 
-re: fclean all bonus
+re: fclean all
 
-.PHONY: all clean fclean re bonus play
+.PRECIOUS: $(PATHO)%.o
