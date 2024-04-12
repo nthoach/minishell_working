@@ -6,7 +6,7 @@
 /*   By: nthoach <nthoach@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/17 20:48:01 by nthoach           #+#    #+#             */
-/*   Updated: 2024/03/25 21:42:00 by nthoach          ###   ########.fr       */
+/*   Updated: 2024/03/28 20:49:49 by nthoach          ###   ########.fr       */
 /*                                                                            */
 /******************************************************************************/
 
@@ -117,13 +117,13 @@ not catch signals such as SIGINT and SIGQUIT
 in this minishell, event function do nothing
 3) Set functions for SIGINT and SIGQUIT 
 */
-void	ini_sigs(void)
-{
-	rl_catch_signals = 0;
-	rl_event_hook = event;
-	signal(SIGINT, sigint_handle);
-	signal(SIGQUIT, sigquit_handle);
-}
+// void	ini_sigs(void)
+// {
+// 	rl_catch_signals = 0;
+// 	rl_event_hook = event;
+// 	signal(SIGINT, sigint_handle);
+// 	signal(SIGQUIT, sigquit_handle);
+// }
 
 /* copies the existing environment variables (arr) and
  adding a new variable (str) at the end of the copied list */
@@ -248,7 +248,6 @@ int	get_pwd(t_mnsh *mnsh)
 	validate_pwd(mnsh);
 	return (1);
 }
-
 void	ini_mnsh(t_mnsh *mnsh, char **envp)
 {
 	mnsh->cmd = 0;
@@ -326,7 +325,7 @@ void	loop_mnsh(t_mnsh *mnsh)
 	while (1)
 	{
 		mnsh->input = readline("minishell>");
-		//implement_mnsh(mnsh);
+		implement_mnsh(mnsh);//
 		if (!mnsh->input)
 		{
 			reset_mnsh(mnsh);
@@ -361,7 +360,11 @@ int	main(int ac, char **av, char **envp)
 		ft_printf("no argument needed, i.e., ./minishell");
 		exit(0);
 	}
-	ini_sigs();
+	//ini_sigs();
+	rl_catch_signals = 0;
+	rl_event_hook = event;
+	signal(SIGINT, sigint_handle);
+	signal(SIGQUIT, sigquit_handle);
 	// while (*envp)
 	// {
 	// 	ft_printf("%s\n", *envp);
